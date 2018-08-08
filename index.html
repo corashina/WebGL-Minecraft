@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>three.js - pointerlock controls</title>
+    <title>WebGL Minecraft</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <link rel="stylesheet" type="text/css" href="style.css">
@@ -11,31 +11,34 @@
 </head>
 
 <body>
+    <div class="pointer"></div>
     <div id="blocker">
 
-        <div id="instructions">`
-            <span style="font-size:40px">Click to play</span>
-            <br /> (W, A, S, D = Move, SPACE = Jump, MOUSE = Look around)
+        <div id="instructions">
+            <span>Click the cross to center your cursor</span>
         </div>
 
     </div>
     <script src="js/PointerLockControls.js"></script>
     <script src="js/Pointerlock.js"></script>
     <script>
-
         var camera, scene, renderer, geometry, material, mesh, controls, raycaster;
-        var keys = [];
-        var objects = [];
-        var blocks = [];
-        var controlsEnabled = false;
-        var canJump = false;
-        var prevTime = performance.now();
-        var velocity = new THREE.Vector3();
-        var mouse = new THREE.Vector2();
-        var raycaster2 = new THREE.Raycaster();
-        var raycaster_x;
-        var loader = new THREE.TextureLoader();
-        var texture = loader.load("textures/dirt.png");
+
+        var keys = [],
+            objects = [],
+            collidableMeshList = [];
+
+        var controlsEnabled = false,
+            canJump = false;
+
+        var velocity = new THREE.Vector3(),
+            mouse = new THREE.Vector2(),
+            raycaster2 = new THREE.Raycaster(),
+            loader = new THREE.TextureLoader();
+
+        var texture = loader.load("textures/dirt.png"),
+            prevTime = performance.now(),
+            MovingCube;
 
         init();
         animate();
@@ -52,38 +55,40 @@
             scene.add(controls.getObject());
 
             raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 10);
-            raycaster_x = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(-1, 0, 0), 0, 10);
 
             // Roll Over
-            rollOverMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10),new THREE.MeshBasicMaterial({color: 0xDDDDDD, opacity: 0.4, transparent: true}));
+            rollOverMesh = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), new THREE.MeshBasicMaterial({ color: 0xDDDDDD, opacity: 0.4, transparent: true }));
             scene.add(rollOverMesh);
 
             // Cube
             cubeGeo = new THREE.BoxGeometry(10, 10, 10);
-            cubeMaterial = new THREE.MeshLambertMaterial({color: 0xfeb74c, map: texture});
+            cubeMaterial = new THREE.MeshLambertMaterial({ color: 0xfeb74c, map: texture });
+
+            var wireMaterial = new THREE.MeshBasicMaterial({ color: 0xfff });
+            MovingCube = new THREE.Mesh(cubeGeo, wireMaterial);
+            scene.add(MovingCube);
 
             // Grid
-            var gridHelper = new THREE.GridHelper(500, 50);
+            var gridHelper = new THREE.GridHelper(250, 25);
+            gridHelper.translateX(5);
+            gridHelper.translateZ(5);
             scene.add(gridHelper);
 
             // Floor
             var geometry = new THREE.PlaneBufferGeometry(250, 250);
             geometry.rotateX(-Math.PI / 2);
-            plane = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({visible: true}));
+            plane = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ visible: true }));
             scene.add(plane);
             objects.push(plane);
 
-            for(var i = 0 ; i < 50 ; i++) {
-                for(var j = 0 ; j < 50 ; j++) {
-                    let mesh = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10),new THREE.MeshBasicMaterial({map:texture, transparent: true}))
-                    mesh.position.x = -250 + i*10+5;
-                    mesh.position.z = -250 + j*10+5;
-                    mesh.position.y = 5;
-                    mesh.rotateZ(-Math.PI / 2);
-                    scene.add(mesh);
-                    objects.push(mesh);
-                }
-            }
+            let mesh = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), new THREE.MeshBasicMaterial({ map: texture, transparent: true }))
+            mesh.position.x = 50
+            mesh.position.z = 50
+            mesh.position.y = 5;
+            mesh.rotateZ(-Math.PI / 2);
+            scene.add(mesh);
+            objects.push(mesh);
+            collidableMeshList.push(mesh)
 
             // Renderer
             renderer = new THREE.WebGLRenderer();
@@ -98,14 +103,15 @@
             window.addEventListener("keydown", (e) => keys[e.keyCode] = true);
             window.addEventListener("keyup", (e) => keys[e.keyCode] = false);
             window.addEventListener("keydown", function(e) {
-                if(e.keyCode == 32) {
-                    if (canJump === true) velocity.y += 350;
+                if (e.keyCode == 32) {
+                    if (canJump === true) velocity.y += 150;
                     canJump = false;
                 }
             })
         }
 
         function onMouseMove(event) {
+
             mouse.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1);
             raycaster2.setFromCamera(mouse, camera);
             var intersects = raycaster2.intersectObjects(objects);
@@ -117,19 +123,33 @@
         }
 
         function onMouseDown(event) {
-            event.preventDefault();
             mouse.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1);
             raycaster2.setFromCamera(mouse, camera);
-            var intersects = raycaster2.intersectObjects(objects);
-            if (intersects.length > 0) {
-                var intersect = intersects[0];
-                var voxel = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10),new THREE.MeshBasicMaterial({color: 0xDDDDDD, map:texture, transparent: true}));
-                voxel.position.copy(intersect.point).add(intersect.face.normal);
-                voxel.position.divideScalar(10).floor().multiplyScalar(10).addScalar(5);
-                scene.add(voxel);
-                objects.push(voxel);
-                blocks.push(voxel);
+            switch (event.buttons) {
+                case 1:
+                    var intersects = raycaster2.intersectObjects(collidableMeshList);
+                    if (intersects.length > 0) {
+                        objects = objects.filter(e => e.uuid != intersects[0].object.uuid)
+                        collidableMeshList = collidableMeshList.filter(e => e.uuid != intersects[0].object.uuid)
+                        scene.children.forEach(e => e.uuid == intersects[0].object.uuid ? scene.remove(e) : null)
+                    }
+                    break;
+                case 2:
+                    var intersects = raycaster2.intersectObjects(objects);
+                    if (intersects.length > 0) {
+                        var intersect = intersects[0];
+                        var voxel = new THREE.Mesh(new THREE.BoxGeometry(10, 10, 10), new THREE.MeshBasicMaterial({ color: 0xDDDDDD, map: texture, transparent: true }));
+                        voxel.position.copy(intersect.point).add(intersect.face.normal);
+                        voxel.position.divideScalar(10).floor().multiplyScalar(10).addScalar(5);
+                        scene.add(voxel);
+                        objects.push(voxel);
+                        collidableMeshList.push(voxel)
+                    }
+                    break;
+                default:
+                    break;
             }
+
         }
 
         function onWindowResize() {
@@ -152,43 +172,75 @@
                 var OnObject = intersections.length > 0;
 
                 var time = performance.now();
-                var delta = (time - prevTime) / 1000;
+                var delta = (time - prevTime) / 2000;
 
                 velocity.x -= velocity.x * 10.0 * delta;
                 velocity.z -= velocity.z * 10.0 * delta;
-                velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+                velocity.y -= 9.8 * 100.0 * delta;
 
-                if (keys[87]) velocity.z -= 400.0 * delta;
-                if (keys[83]) velocity.z += 400.0 * delta;
-                if (keys[65]) velocity.x -= 400.0 * delta;
-                if (keys[68]) velocity.x += 400.0 * delta;
+                if (keys[87]) velocity.z -= 800.0 * delta;
+                if (keys[83]) velocity.z += 800.0 * delta;
+                if (keys[65]) velocity.x -= 800.0 * delta;
+                if (keys[68]) velocity.x += 800.0 * delta;
 
 
-				if (OnObject === true ) {
-					velocity.y = Math.max( 0, velocity.y );
-					canJump = true;
-				}
-
+                if (OnObject === true) {
+                    velocity.y = Math.max(0, velocity.y);
+                    canJump = true;
+                }
 
                 controls.getObject().translateX(velocity.x * delta);
                 controls.getObject().translateY(velocity.y * delta);
                 controls.getObject().translateZ(velocity.z * delta);
 
-                if(controls.getObject().position.y < 10 ) {
-					velocity.y = 0;
-					controls.getObject().position.y = 10;
-					canJump = true;
-				}
+                MovingCube.position.x = controls.getObject().position.x
+                MovingCube.position.y = controls.getObject().position.y
+                MovingCube.position.z = controls.getObject().position.z
+
+
+                var originPoint = MovingCube.position.clone();
+                for (var vertexIndex = 0; vertexIndex < MovingCube.geometry.vertices.length; vertexIndex++) {
+                    var localVertex = MovingCube.geometry.vertices[vertexIndex].clone();
+                    var globalVertex = localVertex.applyMatrix4(MovingCube.matrix);
+                    var directionVector = globalVertex.sub(MovingCube.position);
+
+                    var ray = new THREE.Raycaster(originPoint, directionVector.clone().normalize());
+                    var collisionResults = ray.intersectObjects(collidableMeshList);
+                    if (collisionResults.length > 0 && collisionResults[0].distance < directionVector.length()) {
+                        let v1 = new THREE.Vector3(MovingCube.position.x, MovingCube.position.y, MovingCube.position.z)
+                        let center = getCenterPoint(collisionResults[0].object)
+                        let v2 = new THREE.Vector3(center.x, center.y, center.z)
+                        let dir = new THREE.Vector3();
+                        let vec = dir.subVectors(v2, v1).normalize();
+                        if (Math.abs(vec.x) > Math.abs(vec.z)) {
+                            if (vec.x > 0) controls.getObject().position.x = collisionResults[0].object.position.x - 10;
+                            else controls.getObject().position.x = collisionResults[0].object.position.x + 10;
+                        } else {
+                            if (vec.z > 0) controls.getObject().position.z = collisionResults[0].object.position.z - 10;
+                            else controls.getObject().position.z = collisionResults[0].object.position.z + 10;
+                        }
+                    }
+                }
+
+                if (controls.getObject().position.y < 10) {
+                    velocity.y = 0;
+                    controls.getObject().position.y = 10;
+                    canJump = true;
+                }
 
                 prevTime = time;
 
                 renderer.render(scene, camera);
-
             }
-
         }
 
-
+        const getCenterPoint = (mesh) => {
+            var geometry = mesh.geometry;
+            geometry.computeBoundingBox();
+            center = geometry.boundingBox.getCenter();
+            mesh.localToWorld(center);
+            return center;
+        }
     </script>
 </body>
 
