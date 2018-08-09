@@ -67,3 +67,23 @@ body {
     height: 2px;
     width: 25px;
 }
+
+.inventory {
+    position: absolute;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    bottom: 2%;
+    left: 50%;
+    transform: translate(-50%)
+}
+
+.inv-item {
+    box-sizing: border-box;
+    border: 3px solid gray;
+    width: 64px;
+    height: 64px;
+}
+
+.current {
+    border: 3px solid #ffffff;
+}
