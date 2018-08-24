@@ -1,0 +1,127 @@
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+    background-color: #ffffff;
+    margin: 0;
+    overflow: hidden;
+    font-family: arial;
+}
+
+input {
+    border: none;
+}
+
+#blocker {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+#instructions {
+    width: 100%;
+    height: 100%;
+    display: -webkit-box;
+    display: -moz-box;
+    display: box;
+    -webkit-box-orient: horizontal;
+    -moz-box-orient: horizontal;
+    box-orient: horizontal;
+    -webkit-box-pack: center;
+    -moz-box-pack: center;
+    box-pack: center;
+    -webkit-box-align: center;
+    -moz-box-align: center;
+    box-align: center;
+    color: #ffffff;
+    text-align: center;
+    cursor: pointer;
+    font-size: 40px;
+    margin-top: 5%;
+}
+
+.pointer {
+    width: 22px;
+    height: 22px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.pointer:before,
+.pointer:after {
+    content: "";
+    position: absolute;
+    background: #aaa;
+}
+
+.pointer:before {
+    left: 50%;
+    width: 2px;
+    height: 25px;
+}
+
+.pointer:after {
+    top: 50%;
+    height: 2px;
+    width: 25px;
+}
+
+.inventory {
+    position: absolute;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    bottom: 2%;
+    left: 50%;
+    transform: translate(-50%)
+}
+
+.inv-item {
+    box-sizing: border-box;
+    border: 3px solid gray;
+    width: 64px;
+    height: 64px;
+}
+
+.current {
+    border: 3px solid #ffffff;
+}
+
+#chat {
+    opacity: 0;
+    color: #ffffff;
+    transition: opacity 0.4s ease-in;
+}
+
+#chat-messages {
+    position: absolute;
+    background: #3e3e3e;
+    display: grid;
+    grid-template-rows: repeat(5, 1fr);
+    width: 100%;
+    height: 25%;
+    bottom: 5%;
+    opacity: 0.3;
+}
+
+#chat-input {
+    position: absolute;
+    background: #3e3e3e;
+    color: #ffffff;
+    width: 100%;
+    height: 5%;
+    bottom: 0;
+    opacity: 0.3;
+    z-index: 1;
+}
+
+#chat-messages>p {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}

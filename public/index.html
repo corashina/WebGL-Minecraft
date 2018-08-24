@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>WebGL Minecraft</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <link rel="shortcut icon" type="image/x-icon" href="textures/_grass.png" />
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="js/three.js"></script>
+    <script src="js/stats.min.js"></script>
+    <script src="js/PointerLockControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
+</head>
+
+<body>
+    <div class="pointer"></div>
+
+    <div id="chat">
+        <div id="chat-messages"></div>
+        <input id="chat-input" type="text" placeholder="Send a message"></input>
+    </div>
+
+    <div class="inventory">
+        <img src="textures/_dirt.png" class="inv-item current"></img>
+        <img src="textures/_cobblestone.png" class="inv-item"></img>
+        <img src="textures/_brick.png" class="inv-item"></img>
+        <img src="textures/_stone.png" class="inv-item"></img>
+        <img src="textures/_wool.png" class="inv-item"></img>
+        <img src="textures/_sand.png" class="inv-item"></img>
+        <img src="textures/_stonebricks.png" class="inv-item"></img>
+        <img src="textures/_grass.png" class="inv-item"></img>
+        <img src="textures/_wood.png" class="inv-item"></img>
+    </div>
+    <div id="blocker">
+        <div id="instructions"> <span>Click the cross to center your cursor</span></div>
+    </div>
+</body>
+
+<script type="text/javascript" src="js/Pointerlock.js"></script>
+<script type="text/javascript" src="js/GLTFLoader.js"></script>
+<script type="text/javascript" src="js/main.js"></script>
+
+</html>

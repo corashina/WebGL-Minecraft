@@ -1,0 +1,29 @@
+{
+  "name": "webgl-minecraft",
+  "version": "1.0.0",
+  "description": "WebGL Minecraft",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tomasz-Zielinski/Tomasz-Zielinski.github.io.git"
+  },
+  "author": "Tomasz Zielinski",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Tomasz-Zielinski/Tomasz-Zielinski.github.io/issues"
+  },
+  "homepage": "https://github.com/Tomasz-Zielinski/Tomasz-Zielinski.github.io#readme",
+  "dependencies": {
+    "express": "^4.16.3",
+    "jsonfile": "^4.0.0",
+    "socket.io": "^2.1.1",
+    "three": "^0.95.0",
+    "uuid": "^3.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.3"
+  }
+}
