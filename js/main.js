@@ -2,7 +2,8 @@ var camera, scene, renderer, geometry, material, mesh, controls, raycaster;
 
 var keys = [],
   objects = [],
-  collidableMeshList = [];
+  collidableMeshList = [],
+  worldChunks = [];
 
 var controlsEnabled = false,
   canJump = false;
@@ -10,17 +11,19 @@ var controlsEnabled = false,
 var velocity = new THREE.Vector3(),
   mouse = new THREE.Vector2(),
   raycaster2 = new THREE.Raycaster(),
-  loader = new THREE.TextureLoader();
+  loader = new THREE.TextureLoader(),
+  simplex = new SimplexNoise();
 
 var prevTime = performance.now(),
-  MovingCube,
-  PlayerModel;
+  MovingCube
 
 var stats = new Stats();
 
 const BLOCK_SIZE = 10,
-  worldWidth = 30,
-  worldHeight = 30
+  worldWidth = 10,
+  worldHeight = 10
+
+var chunkX, chunkZ, nextChunkX, nextChunkZ;
 
 const grassMaterial = [
   new THREE.MeshBasicMaterial({ map: loader.load('textures/grass_side.png') }),
@@ -60,17 +63,12 @@ animate();
 
 function init() {
 
-  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1500);
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 125);
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xffffff);
-
+  scene.background = new THREE.Color(0x7EC0EE);
+  scene.fog = new THREE.Fog(0x7EC0EE, 50, 125);
   scene.add(new THREE.AmbientLight(0xffffff))
 
-  loader = new THREE.TextureLoader();
-  texture = loader.load("textures/sky.png")
-  var sky = new THREE.Mesh(new THREE.SphereGeometry(1000, 25, 25), new THREE.MeshPhongMaterial({ map: texture, }));
-  sky.material.side = THREE.BackSide;
-  scene.add(sky);
   loader = new THREE.TextureLoader();
   texture = loader.load("textures/dirt.png")
 
@@ -81,38 +79,13 @@ function init() {
   raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 16);
 
   // Roll Over
-
   rollOverMesh = new THREE.Mesh(new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), new THREE.MeshBasicMaterial({ color: 0xDDDDDD, opacity: 0.4, transparent: true }));
   scene.add(rollOverMesh);
 
   // Cube
-
   MovingCube = new THREE.Mesh(new THREE.BoxGeometry(BLOCK_SIZE, 16, BLOCK_SIZE));
   scene.add(MovingCube);
 
-  var gltfloader = new THREE.GLTFLoader();
-  gltfloader.load('textures/model.gltf', (gltf) => {
-    PlayerModel = gltf.scene;
-    scene.add(PlayerModel);
-  });
-
-
-  var simplex = new SimplexNoise();
-
-  for (var x = 0; x < worldWidth; x++) {
-    for (var z = 0; z < worldHeight; z++) {
-      let y = simplex.noise2D(x, z) * 10;
-      console.log(y)
-      let block = new THREE.Mesh(new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), grassMaterial);
-      let OFFSET = BLOCK_SIZE / 2;
-      block.position.set(x * BLOCK_SIZE - OFFSET, y * BLOCK_SIZE - OFFSET, z * BLOCK_SIZE - OFFSET);
-      objects.push(block);
-      collidableMeshList.push(block);
-      scene.add(block);
-    }
-  }
-
-  // Renderer
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -120,7 +93,6 @@ function init() {
   document.body.appendChild(stats.dom);
   document.body.appendChild(renderer.domElement);
 
-  // Event Listeners
   window.addEventListener('resize', onWindowResize, false);
   window.addEventListener('mousemove', onMouseMove, false);
   window.addEventListener('mousedown', onMouseDown, false);
@@ -147,8 +119,6 @@ function changeInventory(invSlot) {
 function onMouseMove(event) {
   mouse.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1);
 
-  PlayerModel.rotation.y = camera.parent.parent.rotation._y + Math.PI;
-
   raycaster2.setFromCamera(mouse, camera);
   var intersects = raycaster2.intersectObjects(objects);
   if (intersects.length > 0) {
@@ -168,7 +138,9 @@ function onMouseDown(event) {
   switch (event.buttons) {
     case 1:
       var intersects = raycaster2.intersectObjects(collidableMeshList);
-      removeBlock(intersects[0])
+      if (intersects.length > 0 && intersects[0].distance < BLOCK_SIZE * 3) {
+        removeBlock(intersects[0])
+      }
       break;
     case 2:
       var intersects = raycaster2.intersectObjects(objects);
@@ -239,13 +211,24 @@ function animate() {
     controls.getObject().translateY(velocity.y * delta);
     controls.getObject().translateZ(velocity.z * delta);
 
+    nextChunkX = Math.floor(controls.getObject().position.x / 100);
+    nextChunkZ = Math.floor(controls.getObject().position.z / 100);
+    if (chunkX != nextChunkX || chunkZ != nextChunkZ) {
+      for (var i = -1; i < 2; i++) {
+        for (var j = -1; j < 2; j++) {
+          if (!worldChunks.includes((nextChunkX + i) + " " + (nextChunkZ + j))) {
+            loadChunk(nextChunkX + i, nextChunkZ + j);
+            worldChunks.push((nextChunkX + i) + " " + (nextChunkZ + j));
+          }
+        }
+      }
+    }
+    chunkX = nextChunkX;
+    chunkZ = nextChunkZ;
+
     MovingCube.position.x = controls.getObject().position.x
     MovingCube.position.y = controls.getObject().position.y
     MovingCube.position.z = controls.getObject().position.z
-
-    PlayerModel.position.x = getCenterPoint(MovingCube).x;
-    PlayerModel.position.y = getCenterPoint(MovingCube).y;
-    PlayerModel.position.z = getCenterPoint(MovingCube).z;
 
     var originPoint = MovingCube.position.clone();
     for (var vertexIndex = 0; vertexIndex < MovingCube.geometry.vertices.length; vertexIndex++) {
@@ -287,11 +270,26 @@ function animate() {
 const getCenterPoint = (mesh) => {
   var geometry = mesh.geometry;
   geometry.computeBoundingBox();
-
   const center = new THREE.Vector3();
   geometry.boundingBox.getCenter(center);
-
-
   mesh.localToWorld(center);
   return center;
+}
+
+function loadChunk(loadX, loadZ) {
+  var xoff = 0, zoff = 0;
+  for (var x = 0; x < worldWidth; x++) {
+    xoff += 0.01;
+    for (var z = 0; z < worldHeight; z++) {
+      zoff += 0.01;
+      height = Math.floor(simplex.noise3D(xoff, Math.random(), zoff));
+      let block = new THREE.Mesh(new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), grassMaterial);
+      let OFFSET = BLOCK_SIZE / 2;
+      block.position.set(x * BLOCK_SIZE + OFFSET + loadX * 100, height * BLOCK_SIZE - OFFSET + 10, z * BLOCK_SIZE + OFFSET + loadZ * 100);
+      block.name = loadX + " " + loadZ;
+      objects.push(block);
+      collidableMeshList.push(block);
+      scene.add(block);
+    }
+  }
 }
