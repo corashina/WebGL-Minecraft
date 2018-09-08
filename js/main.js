@@ -18,7 +18,9 @@ var prevTime = performance.now(),
 
 var stats = new Stats();
 
-const BLOCK_SIZE = 10;
+const BLOCK_SIZE = 10,
+  worldWidth = 30,
+  worldHeight = 30
 
 const grassMaterial = [
   new THREE.MeshBasicMaterial({ map: loader.load('textures/grass_side.png') }),
@@ -91,9 +93,24 @@ function init() {
   var gltfloader = new THREE.GLTFLoader();
   gltfloader.load('textures/model.gltf', (gltf) => {
     PlayerModel = gltf.scene;
-    // PlayerModel.material.transparent = true;
     scene.add(PlayerModel);
   });
+
+
+  var simplex = new SimplexNoise();
+
+  for (var x = 0; x < worldWidth; x++) {
+    for (var z = 0; z < worldHeight; z++) {
+      let y = simplex.noise2D(x, z) * 10;
+      console.log(y)
+      let block = new THREE.Mesh(new THREE.BoxGeometry(BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE), grassMaterial);
+      let OFFSET = BLOCK_SIZE / 2;
+      block.position.set(x * BLOCK_SIZE - OFFSET, y * BLOCK_SIZE - OFFSET, z * BLOCK_SIZE - OFFSET);
+      objects.push(block);
+      collidableMeshList.push(block);
+      scene.add(block);
+    }
+  }
 
   // Renderer
   renderer = new THREE.WebGLRenderer();
@@ -176,9 +193,9 @@ function addBlock(voxel, materialIndex, uuid) {
 
 function removeBlock(block) {
   if (!block) return;
-  objects = objects.filter(e => e.uuid != block.object.object.uuid)
-  collidableMeshList = collidableMeshList.filter(e => e.uuid != block.object.object.uuid)
-  scene.children.forEach(e => e.uuid == block.object.object.uuid ? scene.remove(e) : null)
+  objects = objects.filter(e => e.uuid != block.object.uuid)
+  collidableMeshList = collidableMeshList.filter(e => e.uuid != block.object.uuid)
+  scene.children.forEach(e => e.uuid == block.object.uuid ? scene.remove(e) : null)
 }
 
 function onWindowResize() {
