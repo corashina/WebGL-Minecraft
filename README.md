@@ -8,5 +8,5 @@ Just open https://tomasz-zielinski.github.io/WebGL-Minecraft/.
  - Simple infinite terrain generation
  - Switching block type
  - Pointerlock
-
+## Preview
 ![alt text](https://raw.githubusercontent.com/Tomasz-Zielinski/WebGL-Minecraft/master/textures/preview.png)
